@@ -1,0 +1,12 @@
+,0
+n_total_samples,15708.0
+mean_ms,0.23456909218232747
+std_ms,0.03671823303461573
+median_ms,0.22744999999999999
+p95_ms,0.274165
+p99_ms,0.4543790000000001
+max_ms,0.8592
+Ts_ms,20.0
+mean_utilization_pct,1.1728454609116372
+max_utilization_pct,4.296
+p99_utilization_pct,2.271895

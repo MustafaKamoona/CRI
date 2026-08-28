@@ -1,0 +1,12 @@
+,0
+python_version,3.10.9
+numpy_version,2.2.6
+pandas_version,2.3.3
+os_platform,Windows-10-10.0.19045-SP0
+cpu_technical,"AMD64 Family 25 Model 80 Stepping 0, AuthenticAMD"
+cpu_model,AMD Ryzen 9 5900HX with Radeon Graphics
+Ts_s,0.02
+Ts_ms,20.0
+N,40
+n_u,4
+n_y,7
