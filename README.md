@@ -118,7 +118,7 @@ measurement-driven readiness loop (per sample k)
   controllers.py        -->  u_safe (fallback droop), u_candidate (OFO), blended command
 ```
 
-![CRI readiness dashboard, nominal case](../README_Figures/fig3_cri_dashboard_nominal.png)
+![CRI readiness dashboard, nominal case](README_Figures/fig3_cri_dashboard_nominal.png)
 
 *The signature figure (Fig. 3 of the paper): operating stress, the five readiness indicators, the
 combined CRI with its Activate/Monitor/Delay/Reject decision regions, and the resulting activation
@@ -130,14 +130,14 @@ The framework is demonstrated on a converter-dominated hybrid AC/DC microgrid: t
 VSCs on a shared DC link, each feeding an AC bus, with a CRI-supervised OFO setpoint coordinator
 as the candidate controller and a conventional droop/PI controller as the always-trusted fallback.
 
-![Microgrid case-study topology](../README_Figures/fig2_microgrid_topology.png)
+![Microgrid case-study topology](README_Figures/fig2_microgrid_topology.png)
 
 *Fig. 2 of the paper: the two-VSC hybrid AC/DC microgrid topology used throughout every scenario.*
 
 ## Key Results
 
 All numbers below are quoted directly from the current manuscript (Sec. VI, Results and
-Discussion) and are reproducible from `TCST_CRI/results/*.csv` via the corresponding notebook.
+Discussion) and are reproducible from `results/*.csv` via the corresponding notebook.
 
 | Scenario | Headline finding |
 |---|---|
@@ -152,13 +152,13 @@ Discussion) and are reproducible from `TCST_CRI/results/*.csv` via the correspon
 | **All 8 scenarios, aggregate** | Mean false-activation count: **66.5 (CRI)** vs. 822.9 (Direct) vs. 269.3 (Threshold) -- a **12.4x** reduction vs. Direct and **4.0x** vs. Threshold; mean unsafe-active fraction: **5.8% (CRI)** vs. 50.0% (Direct) vs. 16.8% (Threshold) |
 
 <p align="center">
-<img src="../README_Figures/fig4_nominal_pu_response.png" width="32%" alt="Nominal per-unit response">
-<img src="../README_Figures/fig5_constraint_margin.png" width="32%" alt="Constraint margin under high loading">
-<img src="../README_Figures/fig7_selectivity.png" width="32%" alt="Distinct failure signatures across three stress tests">
+<img src="README_Figures/fig4_nominal_pu_response.png" width="32%" alt="Nominal per-unit response">
+<img src="README_Figures/fig5_constraint_margin.png" width="32%" alt="Constraint margin under high loading">
+<img src="README_Figures/fig7_selectivity.png" width="32%" alt="Distinct failure signatures across three stress tests">
 </p>
 <p align="center">
-<img src="../README_Figures/fig8_sensitivity_topology.png" width="40%" alt="Sensitivity matrix reshaping after a topology event">
-<img src="../README_Figures/fig9_severe_dashboard.png" width="56%" alt="Combined severe-case dashboard">
+<img src="README_Figures/fig8_sensitivity_topology.png" width="40%" alt="Sensitivity matrix reshaping after a topology event">
+<img src="README_Figures/fig9_severe_dashboard.png" width="56%" alt="Combined severe-case dashboard">
 </p>
 
 **Table III of the manuscript** -- Comparison of Controller-Activation Strategies (S8, combined severe case):
@@ -179,36 +179,36 @@ withhold activation when conditions are safe.
 ## Repository Structure
 
 ```
-TSCT_Paper_CRI/
-├── CRI_Main_Paper.tex             # The manuscript
-├── Figures/                       # Paper figures (PDF), as included in CRI_Main_Paper.tex
+TCST_CRI/                          # Repository root
+├── README.md
+├── LICENSE.txt
+├── cri_microgrid/                 # Core simulation, controller, and CRI package
+│   ├── config.py                  #   PlantParams, ControllerParams, ConstraintParams, ProbeParams,
+│   │                              #   ProfileParams, NoiseParams, ScenarioParams, CRIParams, SimulationParams
+│   ├── plant.py                   #   HybridACDCPlant: two-VSC hybrid AC/DC plant; CRI-blind by construction
+│   ├── controllers.py             #   FallbackDroopController (u_safe), OFOVSCController (candidate), blend_command
+│   ├── sensitivity.py             #   estimate_sensitivity: weighted regularized local S_hat
+│   ├── probing.py                 #   Safe micro-probing, SMI-scaled amplitude, actuator-bound clipping
+│   ├── cri.py                     #   The five indicators, CRI combination/filter/classification, CRISupervisor
+│   ├── interfaces.py              #   Protocols for bringing your own controller/plant (see notebook 12)
+│   ├── profiles.py                #   Load/PV/drift exogenous-input building blocks
+│   ├── scenarios.py               #   S1-S8 scenario builders + S10 randomized-trial builder
+│   ├── sim.py                     #   run_closed_loop / run_closed_loop_generic: master closed-loop simulation
+│   ├── metrics.py                 #   Readiness/activation and control/disturbance metrics
+│   ├── timing.py                  #   Isolated CRI-update execution-time benchmarking
+│   ├── validation.py              #   Simulation-only ground truth (z_k^unsafe), confusion-matrix counts
+│   └── plotstyle.py               #   Shared IEEE-style figure formatting and validated color system
+├── notebooks/                     # One notebook per study; each only CALLS cri_microgrid functions
+│   ├── 01_nominal_readiness.ipynb  ...  10_statistics_and_complexity.ipynb
+│   ├── 11_Implementation_Time.ipynb  # Isolated, real-data CRI-update timing
+│   └── 12_bring_your_own.ipynb     # Template for a new controller, plant, or hardware target
+├── Figures/                       # All generated figures (PDF), produced by the notebooks above
 ├── README_Figures/                # PNG renders of the paper figures, used in this README
-├── LaTeX_Edit_Add.ipynb           # Paper-integration staging log (figure <-> text <-> numbers)
-└── TCST_CRI/                      # The complete simulation framework and study
-    ├── cri_microgrid/             # Core simulation, controller, and CRI package
-    │   ├── config.py              #   PlantParams, ControllerParams, ConstraintParams, ProbeParams,
-    │   │                          #   ProfileParams, NoiseParams, ScenarioParams, CRIParams, SimulationParams
-    │   ├── plant.py               #   HybridACDCPlant: two-VSC hybrid AC/DC plant; CRI-blind by construction
-    │   ├── controllers.py         #   FallbackDroopController (u_safe), OFOVSCController (candidate), blend_command
-    │   ├── sensitivity.py         #   estimate_sensitivity: weighted regularized local S_hat
-    │   ├── probing.py             #   Safe micro-probing, SMI-scaled amplitude, actuator-bound clipping
-    │   ├── cri.py                 #   The five indicators, CRI combination/filter/classification, CRISupervisor
-    │   ├── interfaces.py          #   Protocols for bringing your own controller/plant (see notebook 12)
-    │   ├── profiles.py            #   Load/PV/drift exogenous-input building blocks
-    │   ├── scenarios.py           #   S1-S8 scenario builders + S10 randomized-trial builder
-    │   ├── sim.py                 #   run_closed_loop / run_closed_loop_generic: master closed-loop simulation
-    │   ├── metrics.py             #   Readiness/activation and control/disturbance metrics
-    │   ├── timing.py              #   Isolated CRI-update execution-time benchmarking
-    │   ├── validation.py          #   Simulation-only ground truth (z_k^unsafe), confusion-matrix counts
-    │   └── plotstyle.py           #   Shared IEEE-style figure formatting and validated color system
-    ├── notebooks/                 # One notebook per study; each only CALLS cri_microgrid functions
-    │   ├── 01_nominal_readiness.ipynb  ...  10_statistics_and_complexity.ipynb
-    │   ├── 11_Implementation_Time.ipynb  # Isolated, real-data CRI-update timing
-    │   └── 12_bring_your_own.ipynb     # Template for a new controller, plant, or hardware target
-    ├── Figures/                   # All generated figures (PDF), produced by the notebooks above
-    ├── README_Figures/            # PNG renders used in TCST_CRI/README.md and this README
-    └── results/                   # CSV exports of every study's numerical results
+└── results/                       # CSV exports of every study's numerical results
 ```
+
+The manuscript source (`CRI_Main_Paper.tex`) and its PDF figure set are maintained separately and
+are not part of this code repository.
 
 ## Installation
 
@@ -216,7 +216,7 @@ Requires Python 3.10+.
 
 ```bash
 git clone <this-repository-url>
-cd TSCT_Paper_CRI/TCST_CRI
+cd TCST_CRI
 pip install numpy scipy matplotlib pandas jupyter
 ```
 
@@ -240,7 +240,7 @@ for strategy in ["direct", "threshold", "cri"]:
     print(strategy, "mean CRI:", log["CRI"].mean(), " active fraction:", log["s"].mean())
 ```
 
-Or open any notebook in `TCST_CRI/notebooks/` and run it top to bottom -- each is self-contained
+Or open any notebook in `notebooks/` and run it top to bottom -- each is self-contained
 and exports its own figures (to `Figures/`) and results (to `results/`).
 
 ## Notebooks Guide
@@ -301,7 +301,7 @@ produced every result in this repository:
 
 ## Extending the Framework: Bring Your Own Controller, Plant, or Hardware
 
-`TCST_CRI/notebooks/12_bring_your_own.ipynb` is a complete, standalone template for putting the
+`notebooks/12_bring_your_own.ipynb` is a complete, standalone template for putting the
 CRI engine to work beyond this paper's microgrid case study -- for any development, design, or
 engineering team building their own controller, plant model, or hardware deployment. It ships with
 full worked examples, and this section summarizes its content end to end.
@@ -404,8 +404,8 @@ complete set of supplementary results:
 | Bring-your-own template | 12 | Full worked examples plus the HIL/experimental deployment guide above |
 
 <p align="center">
-<img src="../README_Figures/fig6_probe_scaling.png" width="32%" alt="Safe probing scaling law verification">
-<img src="../README_Figures/fig10_strategy_comparison.png" width="32%" alt="All-scenario strategy comparison">
+<img src="README_Figures/fig6_probe_scaling.png" width="32%" alt="Safe probing scaling law verification">
+<img src="README_Figures/fig10_strategy_comparison.png" width="32%" alt="All-scenario strategy comparison">
 <img src="README_Figures/Fig_scenario_fingerprint.png" width="32%" alt="Scenario fingerprint heatmap">
 </p>
 <p align="center">
@@ -422,7 +422,7 @@ formal citation entry will be added here once the paper is published.
 
 ## License
 
-This repository is released under the [MIT License](../LICENSE.txt).
+This repository is released under the [MIT License](LICENSE.txt).
 
 ## Acknowledgments
 
