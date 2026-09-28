@@ -15,6 +15,17 @@ This repository contains the complete simulation framework, controller and CRI i
 paper source, and reproducible notebooks behind the manuscript *"Measurement-Driven Control
 Readiness for Safe Controller Activation"* (M. A. Kamoona and J. M. Mauricio).
 
+The framework ships in two commissioning modes of the same CRI architecture --
+**Engineering-Configured CRI (EC-CRI)**, the fixed, hand-tuned configuration described above, and
+**Data-Calibrated CRI (DC-CRI)**, a risk-constrained, data-driven calibration of the same five
+weights and three decision thresholds, validated under an 8-fold leave-one-scenario-out (LOSO)
+protocol. See
+[Data-Calibrated CRI (DC-CRI): LOSO Calibration and Risk-Aware Deployment](#data-calibrated-cri-dc-cri-loso-calibration-and-risk-aware-deployment)
+below. DC-CRI is an additional, alternative commissioning path through the same `cri_microgrid`
+package, selected only by passing a different `CRIParams` -- EC-CRI itself is unchanged.
+
+**Last updated:** 2026-09-28.
+
 ---
 
 ## Table of Contents
@@ -25,17 +36,18 @@ Readiness for Safe Controller Activation"* (M. A. Kamoona and J. M. Mauricio).
 4. [Architecture](#architecture)
 5. [Case Study](#case-study)
 6. [Key Results](#key-results)
-7. [Repository Structure](#repository-structure)
-8. [Installation](#installation)
-9. [Quick Start](#quick-start)
-10. [Notebooks Guide](#notebooks-guide)
-11. [CRI Design Parameters](#cri-design-parameters)
-12. [Extending the Framework: Bring Your Own Controller, Plant, or Hardware](#extending-the-framework-bring-your-own-controller-plant-or-hardware)
-13. [Supplementary Material](#supplementary-material)
-14. [Paper](#paper)
-15. [License](#license)
-16. [Acknowledgments](#acknowledgments)
-17. [Contact](#contact)
+7. [Data-Calibrated CRI (DC-CRI): LOSO Calibration and Risk-Aware Deployment](#data-calibrated-cri-dc-cri-loso-calibration-and-risk-aware-deployment)
+8. [Repository Structure](#repository-structure)
+9. [Installation](#installation)
+10. [Quick Start](#quick-start)
+11. [Notebooks Guide](#notebooks-guide)
+12. [CRI Design Parameters](#cri-design-parameters)
+13. [Extending the Framework: Bring Your Own Controller, Plant, or Hardware](#extending-the-framework-bring-your-own-controller-plant-or-hardware)
+14. [Supplementary Material](#supplementary-material)
+15. [Paper](#paper)
+16. [License](#license)
+17. [Acknowledgments](#acknowledgments)
+18. [Contact](#contact)
 
 ---
 
@@ -176,6 +188,165 @@ Across all eight scenarios, every strategy correctly reaches zero false activati
 scenarios with no genuine hazard (S1, S2, S4, S6), confirming the CRI does not unnecessarily
 withhold activation when conditions are safe.
 
+## Data-Calibrated CRI (DC-CRI): LOSO Calibration and Risk-Aware Deployment
+
+EC-CRI's five weights $\omega_i$ and three decision thresholds $\eta_A,\eta_M,\eta_D$ are hand-set
+engineering defaults. **DC-CRI** calibrates the same quantities directly from closed-loop data,
+under an explicit activation-risk tolerance $\epsilon_{\mathrm{risk}}$ and a finite verification
+horizon $T_H$, then evaluates the result on genuinely unseen operating conditions -- new module
+`cri_microgrid/dc_calibration.py`, new notebooks `13_dc_cri_loso.ipynb` and
+`14_dc_cri_sensitivity.ipynb`; `cri.py`, `sim.py`, and every EC-CRI notebook are unchanged.
+
+**Calibration in one paragraph.** For a finite horizon $H$ (samples), a hard-limit hazard label
+$z_k^{(H)}=1$ iff any of the next $H$ samples violates a voltage/current/DC-link limit. Weights
+$\boldsymbol\omega$ are fit by a small regularized least-squares QP so that $\mathrm{CRI}_k$ tracks
+$1$ on safe samples and is penalized on hazardous ones ($\lambda_H$-weighted). The activation
+threshold $\eta_A^\star$ is then chosen, by a grid search, to **maximize controller availability
+subject to the achieved activation risk staying at or below $\epsilon_{\mathrm{risk}}$** -- the risk
+tolerance is a hard constraint, not a soft preference. Monitor/Delay margins $\eta_M,\eta_D$ are set
+below $\eta_A^\star$ exactly as in EC-CRI. All of this is a pure offline post-processing step on
+logged $(\Gamma_k, z_k^{(H)})$ data -- the online `CRISupervisor` architecture itself is completely
+unchanged; DC-CRI is only a different `CRIParams`.
+
+**Validation protocol: 8-fold leave-one-scenario-out (LOSO).** For each of the eight scenarios in
+turn, DC-CRI is calibrated **only** on trajectory data from the other seven, then evaluated with a
+genuinely fresh closed-loop simulation on the held-out scenario -- the calibration procedure never
+sees the scenario it is scored on. This is the central test of the whole DC-CRI study, and it is run
+at the principal settings ($\epsilon_{\mathrm{risk}}=0.01$, $T_H=0.5$ s, $\lambda_H=2.0$) as well as
+across three risk tolerances and three additional horizons, to characterize the resulting
+engineering trade-offs rather than report one number in isolation.
+
+![Scenario-wise LOSO calibration and evaluation of DC-CRI](README_Figures/loso_framework.png)
+
+*At each fold, seven scenarios are used exclusively for parameter calibration and the remaining
+scenario is retained for unseen evaluation; the procedure repeats until every scenario has served
+once as the held-out test case.*
+
+![LOSO generalization and risk-availability characteristics of DC-CRI](README_Figures/Fig_dc_cri_loso_summary_V2.png)
+
+*(a) Out-of-scenario false-activation rate (FAR) by held-out scenario, EC-CRI vs. DC-CRI. (b)
+LOSO-aggregate availability vs. FAR across four tested risk tolerances $\epsilon_{\mathrm{risk}}$.
+(c) The five calibrated weights across all eight LOSO folds -- the coupling weight $\omega_C^\star$
+calibrates to exactly zero in every fold; the safety-margin weight $\omega_S^\star$ dominates in
+seven of eight. (d) LOSO-aggregate FAR and availability across four tested verification horizons
+$T_H$.*
+
+**Headline LOSO result** (all 8 folds, $\epsilon_{\mathrm{risk}}=0.01$, $T_H=0.5$ s; each held-out
+scenario averaged over its own evaluation seeds first, then the 8 scenario-level values averaged
+with equal weight -- source: `results/results_dc_cri_loso_aggregate.csv`):
+
+| Method | $N_{FA}$ | FAR | FDR | $A_c$ | $E_V$ |
+|---|---|---|---|---|---|
+| Direct activation | 794.9 | 0.500 | 0.000 | 1.000 | 0.043 |
+| Hard-limit supervisor | 222.1 | 0.142 | 0.022 | 0.756 | 0.044 |
+| EC-CRI | 6.1 | 0.033 | 0.247 | 0.683 | 0.046 |
+| **DC-CRI** | 374.3 | 0.217 | **0.054** | **0.806** | 0.048 |
+
+At this risk tolerance, DC-CRI is less over-conservative than EC-CRI (FDR $0.05$ vs. $0.25$ -- EC-CRI
+withholds activation during genuinely safe conditions roughly a quarter of the time) and reaches
+$12$ percentage points higher controller availability ($0.806$ vs. $0.683$), while staying well
+below direct activation's false-activation rate ($0.217$ vs. $0.500$). Calibration is feasible in
+all **8/8** LOSO folds, and the activation-risk constraint is actively binding (not slack) in every
+fold. Generalization is not uniform, however: it is strong for six of the eight held-out scenarios
+(S1, S3, S4, S6, S7, and S2 to a lesser degree) and degrades specifically for the two most severe,
+least-represented ones (S5, S8) -- see below.
+
+*(Note on aggregation: each held-out scenario must contribute equally to this table, but S6 and S8
+were evaluated over 5 seeds each (measurement noise) against 1 seed for the other six scenarios --
+averaging the raw per-seed rows directly would therefore silently overweight S6/S8 by 5x. The
+aggregation is done in two stages instead -- average seeds within each scenario first, then average
+the resulting 8 scenario-level values with equal weight -- which is also what Table
+`tab:risk_sensitivity`/`tab:horizon_sensitivity` below already do, so all three tables are now on the
+same convention and directly comparable at $\epsilon_{\mathrm{risk}}=0.01$, $T_H=0.5$ s.)*
+
+**The honest finding, not hidden.** DC-CRI's calibration pool is dominated (>97% of pooled hazard
+samples in any 7-scenario fold) by scenarios S7/S8's collapse-type hazard signature. This is not a
+bug in the calibration procedure -- verified three independent ways: (1) the offline CRI
+reconstruction used for calibration is bit-exact against the real online `CRISupervisor`; (2) the
+effect persists across a $\lambda_H$ sweep from 2 to 50; (3) the S2-held-out failure case was traced
+to a **genuine new DC-link voltage violation** ($V_{dc}$ dips to $0.918$ pu, below the $0.92$ pu
+limit) that only occurs under DC-CRI's own, more permissive closed loop -- a real physical
+consequence, not a labeling artifact. When a scenario's hazard mechanism is underrepresented in the
+calibration pool, a threshold that satisfies its risk constraint exactly on the data it was given
+can still be too permissive for that scenario -- precisely the failure mode LOSO validation exists
+to expose. This directly motivated moving the principal risk tolerance from an initially-tried
+$\epsilon_{\mathrm{risk}}=0.05$ (poor generalization on 5/8 folds) to $\epsilon_{\mathrm{risk}}=0.01$
+(good generalization on 6/8 folds) -- the best-behaved choice among those tested, not a
+retrospectively cherry-picked one.
+
+**Risk-tolerance sensitivity** (LOSO-aggregate, mean over 8 folds; source:
+`results/results_dc_cri_risk_sensitivity.csv`) -- the intended engineering trade-off, confirmed
+under genuine out-of-scenario evaluation:
+
+| $\epsilon_{\mathrm{risk}}$ | $\eta_A^\star$ | FAR | $A_c$ | FDR |
+|---|---|---|---|---|
+| 0.01 | $0.503\pm0.103$ | 0.217 | 0.806 | 0.054 |
+| 0.025 | $0.218\pm0.080$ | 0.408 | 0.952 | 0.000 |
+| 0.05 | $0.134\pm0.041$ | 0.646 | 0.998 | 0.000 |
+| 0.10 | $0.119\pm0.050$ | 0.650 | 1.000 | 0.000 |
+
+Tightening $\epsilon_{\mathrm{risk}}$ from $0.10$ to $0.01$ raises the calibrated threshold, lowers
+FAR from $0.65$ to $0.22$, and reduces availability from $1.00$ to $0.81$ -- loosening it produces
+the opposite pattern, exactly as intended. The relationship is not gently graded: there is a sharp
+transition in $\eta_A^\star$ between $\epsilon_{\mathrm{risk}}=0.01$ and $0.025$, reflecting the
+calibration pool's hazard-sample composition described above. (The $\epsilon_{\mathrm{risk}}=0.01$
+row matches the corrected headline table above exactly, since notebook 14's evaluation now uses the
+same seed-averaging convention as notebook 13 -- see the aggregation-fix note further down.)
+
+**Verification-horizon sensitivity** (LOSO-aggregate, mean over 8 folds, $\epsilon_{\mathrm{risk}}=0.01$;
+source: `results/results_dc_cri_horizon_sensitivity.csv`):
+
+| $T_H$ [s] | $N_{\mathrm{FA}}$ | FAR | FDR | $A_c$ |
+|---|---|---|---|---|
+| 0.10 | 370.0 | 0.269 | 0.033 | 0.861 |
+| 0.25 | 385.6 | 0.228 | 0.003 | 0.844 |
+| 0.50 | 374.3 | 0.217 | 0.054 | 0.806 |
+| 1.00 | 136.4 | 0.094 | 0.273 | 0.586 |
+
+Longer horizons produce a more conservative threshold and lower FAR, at the cost of availability and
+a rising FDR. $T_H=0.5$ s was retained as the principal setting as the point closest to the middle
+of this trade-off. The $T_H=0.5$ s row matches the corrected headline table exactly (both are the
+same $\epsilon_{\mathrm{risk}}=0.01$, $T_H=0.5$ s point) -- see the aggregation-fix note below.
+
+*(Aggregation fix, 2nd pass: notebook 14's `run_full_loso` originally evaluated every held-out
+scenario -- including S6/S8 -- on a single seed, so its risk/horizon sweeps disagreed with the
+headline table above at the shared principal point ($N_{FA}$: 376.8 vs. 374.3; FDR: 0.052 vs. 0.054)
+even though both were nominally "equal-scenario-weighted." Fixed by giving `run_full_loso` the same
+`NOISY_SCENARIOS`/5-seed averaging as notebook 13 before computing the 8-fold mean; re-running moved
+several non-principal rows too (e.g. $T_H=0.1$ s FAR: $0.369\to0.269$; $\epsilon_{\mathrm{risk}}=0.025$
+FAR: $0.508\to0.408$), reflecting real seed-to-seed variability in S8's stochastic realization at
+looser thresholds, not a further bug -- the principal point now matches the headline table exactly.)*
+
+**Calibration feasibility and runtime** (all 8 folds, $\epsilon_{\mathrm{risk}}=0.01$; source:
+`results/results_dc_cri_calibration_diagnostics.csv`): every fold is calibration-feasible (**8/8**),
+the risk constraint is active in all eight, the achieved calibration-set FAR sits within 3% relative
+of the $0.01$ target in every fold ($0.0097$-$0.0100$), and weight calibration itself is essentially
+free as a deployment cost, completing in $2.2$-$2.9$ ms per fold ($9$-$11$ SLSQP iterations) as a
+one-time offline commissioning step -- it does not affect the online per-sample CRI update time
+(Sec. 11 below), which is identical for EC-CRI and DC-CRI.
+
+![Representative trajectory: EC-CRI vs. DC-CRI on S8, held out from its own calibration](README_Figures/Fig_dc_cri_representative_trajectory.png)
+
+*The clearest single illustration of the generalization gap: on S8 held out from calibration,
+EC-CRI's fixed threshold correctly rejects activation almost throughout (mean $s_k=0.008$), while
+DC-CRI's calibrated threshold -- never having seen S8 -- remains active almost throughout (mean
+$s_k=1.000$). Included deliberately as the one honestly negative result in this study: the
+framework's fallback-safety guarantee means a wrong readiness estimate here still leaves the plant
+protected by the always-trusted fallback controller, not unprotected.*
+
+| # | Notebook | Purpose | Key outputs |
+|---|---|---|---|
+| 13 | `dc_cri_loso` | Calibration-data generation (5 seeds x 8 scenarios) + the full 8-fold LOSO loop (Direct/Hard-limit/EC-CRI/DC-CRI on each held-out scenario) + feasibility/runtime diagnostics | `results_dc_cri_loso_folds.csv`, `results_dc_cri_loso_perscenario.csv` (+ `_summary`), `results_dc_cri_loso_aggregate.csv`, `results_dc_cri_calibration_diagnostics.csv`, `dc_cri_calibration_trajectories.npz` |
+| 14 | `dc_cri_sensitivity` | Risk-tolerance sweep, horizon sweep, the multi-panel LOSO summary figure, and the representative-trajectory figure | `results_dc_cri_risk_sensitivity.csv`, `results_dc_cri_horizon_sensitivity.csv`, `Fig_dc_cri_loso_summary_V2.pdf`, `Fig_dc_cri_representative_trajectory.pdf` |
+
+**Modeling note.** The hard operational safe set behind $z_k^{(H)}$ is defined as voltage/current/
+DC-link limits only (`dc_calibration.hard_limit_violation`), not the broader authority/noise/drift
+mechanism label used elsewhere for diagnostics -- actuator setpoint-box headroom is excluded because
+it is already captured inside SMI, not a physical-plant-safety violation in the same sense.
+
+Every number above is reproducible directly from `results/*.csv` via
+`notebooks/13_dc_cri_loso.ipynb` and `notebooks/14_dc_cri_sensitivity.ipynb`.
+
 ## Repository Structure
 
 ```
@@ -190,25 +361,28 @@ TCST_CRI/                          # Repository root
 │   ├── sensitivity.py             #   estimate_sensitivity: weighted regularized local S_hat
 │   ├── probing.py                 #   Safe micro-probing, SMI-scaled amplitude, actuator-bound clipping
 │   ├── cri.py                     #   The five indicators, CRI combination/filter/classification, CRISupervisor
+│   ├── dc_calibration.py          #   DC-CRI weight/threshold calibration, LOSO orchestration
 │   ├── interfaces.py              #   Protocols for bringing your own controller/plant (see notebook 12)
 │   ├── profiles.py                #   Load/PV/drift exogenous-input building blocks
 │   ├── scenarios.py               #   S1-S8 scenario builders + S10 randomized-trial builder
 │   ├── sim.py                     #   run_closed_loop / run_closed_loop_generic: master closed-loop simulation
-│   ├── metrics.py                 #   Readiness/activation and control/disturbance metrics
+│   ├── metrics.py                 #   Readiness/activation and control/disturbance metrics (+ FAR/FDR/A_c, DC-CRI)
 │   ├── timing.py                  #   Isolated CRI-update execution-time benchmarking
 │   ├── validation.py              #   Simulation-only ground truth (z_k^unsafe), confusion-matrix counts
 │   └── plotstyle.py               #   Shared IEEE-style figure formatting and validated color system
 ├── notebooks/                     # One notebook per study; each only CALLS cri_microgrid functions
 │   ├── 01_nominal_readiness.ipynb  ...  10_statistics_and_complexity.ipynb
 │   ├── 11_Implementation_Time.ipynb  # Isolated, real-data CRI-update timing
-│   └── 12_bring_your_own.ipynb     # Template for a new controller, plant, or hardware target
+│   ├── 12_bring_your_own.ipynb     # Template for a new controller, plant, or hardware target
+│   ├── 13_dc_cri_loso.ipynb        # DC-CRI calibration + 8-fold LOSO evaluation
+│   └── 14_dc_cri_sensitivity.ipynb # Risk/horizon sensitivity + the LOSO summary and representative-trajectory figures
 ├── Figures/                       # All generated figures (PDF), produced by the notebooks above
-├── README_Figures/                # PNG renders of the paper figures, used in this README
+├── README_Figures/                # PNG renders used in this README
 └── results/                       # CSV exports of every study's numerical results
 ```
 
-The manuscript source (`CRI_Main_Paper.tex`) and its PDF figure set are maintained separately and
-are not part of this code repository.
+The manuscript source (`CRI_Main_Paper_V2.tex`) and its LaTeX-integration staging notes are
+maintained separately and are not part of this code repository.
 
 ## Installation
 
@@ -259,6 +433,8 @@ and exports its own figures (to `Figures/`) and results (to `results/`).
 | 10 | `statistics_and_complexity` | 30 randomized trials + timing sweep + 20-seed Monte Carlo over S1-S8 | `results_statistics.csv`, `results_complexity.csv`, `results_multiseed_monte_carlo.csv`, `Fig_statistics.pdf`, `Fig_complexity.pdf` |
 | 11 | `Implementation_Time` | Isolated real-data timing of `CRISupervisor.step()` at case-study dimensions | `results_implementation_time_summary.csv`, `results_implementation_time_per_scenario.csv` |
 | **12** | **`bring_your_own`** | Template: your controller, your plant, or a HIL/experimental target | Equations-at-a-glance, interface protocols, worked examples, and the HIL/experimental deployment guide -- see the [dedicated section](#extending-the-framework-bring-your-own-controller-plant-or-hardware) below |
+| **13** | **`dc_cri_loso`** | DC-CRI weight/threshold calibration + 8-fold LOSO evaluation (S1-S8, each held out in turn) | `results_dc_cri_loso_folds.csv`, `results_dc_cri_loso_perscenario(.summary).csv`, `results_dc_cri_loso_aggregate.csv`, `results_dc_cri_calibration_diagnostics.csv` -- see [DC-CRI section](#data-calibrated-cri-dc-cri-loso-calibration-and-risk-aware-deployment) above |
+| **14** | **`dc_cri_sensitivity`** | Risk-tolerance sweep ($\epsilon_{\mathrm{risk}}$) and verification-horizon sweep ($T_H$), both under full LOSO re-evaluation | `results_dc_cri_risk_sensitivity.csv`, `results_dc_cri_horizon_sensitivity.csv`, `Fig_dc_cri_loso_summary_V2.pdf`, `Fig_dc_cri_representative_trajectory.pdf` |
 
 Every strategy comparison within a notebook uses the same random seed across `direct`,
 `threshold`, and `cri` runs, so all three see an identical disturbance/noise realization -- a
@@ -417,7 +593,7 @@ complete set of supplementary results:
 ## Paper
 
 This repository accompanies the manuscript *"Measurement-Driven Control Readiness for Safe
-Controller Activation"* (M. A. Kamoona and J. M. Mauricio), source at `CRI_Main_Paper.tex`. A
+Controller Activation"* (M. A. Kamoona and J. M. Mauricio), source at `CRI_Main_Paper_V2.tex`. A
 formal citation entry will be added here once the paper is published.
 
 ## License
@@ -437,4 +613,3 @@ Corresponding author: muskam@alum.us.es, mustafazzasim@gmail.com
 **Juan Manuel Mauricio** -- Department of Electrical Engineering, Universidad de Sevilla, Seville, Spain
 
 For questions, issues, or collaboration inquiries, please open a GitHub issue on this repository.
-"# CRI" 

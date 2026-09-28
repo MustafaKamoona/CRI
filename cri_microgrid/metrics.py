@@ -119,3 +119,34 @@ def recovery_time(t, cls_code, event_end_time, activate_code=3) -> float:
     """First time after event_end_time that the classification returns to
     Activate, minus event_end_time."""
     return detection_delay(t, cls_code, event_end_time, activate_code - 0.5, direction="above")
+
+
+# --- Finite-horizon activation-risk metrics (CRI_Main_Paper_V2.tex, DC-CRI) -
+# These use the finite-horizon label z_k^(H) (dc_calibration.finite_horizon_label),
+# not the instantaneous/multi-mechanism z_k^unsafe used by the original
+# false_activation_count/unsafe_active_fraction above.
+def false_activation_count_horizon(s, z_H, eps=1e-9) -> int:
+    """N_FA^(H) = sum_k s_k * z_k^(H) (Eq. false_activation_horizon)."""
+    s, z = np.asarray(s), np.asarray(z_H)
+    return int(np.sum((s == 1) & (z == 1)))
+
+
+def far(s, z_H, eps=1e-9) -> float:
+    """False Activation Rate (Eq. FAR): sum(s*z^H) / (sum(z^H) + eps) --
+    the fraction of genuinely hazardous samples during which the candidate
+    controller was nonetheless active."""
+    s, z = np.asarray(s, dtype=float), np.asarray(z_H, dtype=float)
+    return float(np.sum(s * z) / (np.sum(z) + eps))
+
+
+def fdr(s, z_H, eps=1e-9) -> float:
+    """False Delay Rate (Eq. FDR): sum((1-s)*(1-z^H)) / (sum(1-z^H) + eps) --
+    the fraction of genuinely safe samples during which the candidate
+    controller was nonetheless withheld (over-conservatism)."""
+    s, z = np.asarray(s, dtype=float), np.asarray(z_H, dtype=float)
+    return float(np.sum((1.0 - s) * (1.0 - z)) / (np.sum(1.0 - z) + eps))
+
+
+def controller_availability(s) -> float:
+    """A_c = mean_k(s_k) (Eq. controller_availability)."""
+    return float(np.mean(np.asarray(s, dtype=float)))
