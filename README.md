@@ -12,8 +12,7 @@ released as a plant-agnostic package ready for any team's own controller, plant,
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 This repository contains the complete simulation framework, controller and CRI implementation,
-paper source, and reproducible notebooks behind the manuscript *"Measurement-Driven Control
-Readiness for Safe Controller Activation"* (M. A. Kamoona and J. M. Mauricio).
+and reproducible notebooks.
 
 The framework ships in two commissioning modes of the same CRI architecture --
 **Engineering-Configured CRI (EC-CRI)**, the fixed, hand-tuned configuration described above, and
@@ -44,10 +43,9 @@ package, selected only by passing a different `CRIParams` -- EC-CRI itself is un
 12. [CRI Design Parameters](#cri-design-parameters)
 13. [Extending the Framework: Bring Your Own Controller, Plant, or Hardware](#extending-the-framework-bring-your-own-controller-plant-or-hardware)
 14. [Supplementary Material](#supplementary-material)
-15. [Paper](#paper)
-16. [License](#license)
-17. [Acknowledgments](#acknowledgments)
-18. [Contact](#contact)
+15. [License](#license)
+16. [Acknowledgments](#acknowledgments)
+17. [Contact](#contact)
 
 ---
 
@@ -589,12 +587,6 @@ complete set of supplementary results:
 <img src="README_Figures/Fig_readiness_surface_3d.png" width="32%" alt="3D CRI readiness surface">
 <img src="README_Figures/Fig_statistics.png" width="32%" alt="Statistical validation over 30 randomized trials">
 </p>
-
-## Paper
-
-This repository accompanies the manuscript *"Measurement-Driven Control Readiness for Safe
-Controller Activation"* (M. A. Kamoona and J. M. Mauricio), source at `CRI_Main_Paper_V2.tex`. A
-formal citation entry will be added here once the paper is published.
 
 ## License
 
