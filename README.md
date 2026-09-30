@@ -25,6 +25,8 @@ package, selected only by passing a different `CRIParams` -- EC-CRI itself is un
 
 **Last updated:** 2026-09-28.
 
+Associated manuscript under review; data and code archived at IEEE DataPort, DOI: 10.21227/wv4k-z538.
+
 ---
 
 ## Table of Contents
@@ -90,25 +92,25 @@ comparison in every scenario.
 
 Every equation is implemented as its own small, pure function in `cri_microgrid`, independently
 testable and directly traceable to the manuscript (equation numbers below match the current
-version of `CRI_Main_Paper.tex`):
+version of `CRI_Main_Paper_V2.tex`):
 
 | Eq. | Name | Formula | Implementation |
 |---|---|---|---|
-| (10) | Normalized increments | $\Delta\widetilde u_k=D_u^{-1}\Delta u_k,\ \Delta\widetilde y_k=D_y^{-1}\Delta y_k$ | `config.DEFAULT_D_u`, `DEFAULT_D_y` |
-| (13) | Safe-probing amplitude | $\bar\delta_k=\bar\delta_{\max}\,\mathrm{SMI}_k$ | `probing.scale_probe_with_smi` |
-| (15) | Weighted regularized sensitivity | $\hat S_k=\Delta\widetilde Y_kW_k\Delta\widetilde U_k^T\left(\Delta\widetilde U_kW_k\Delta\widetilde U_k^T+\lambda_sI\right)^{-1}$ | `sensitivity.estimate_sensitivity` |
-| (18)-(19) | Responsiveness | $\rho_k=\tfrac{1}{n_u}\lVert\hat S_k\rVert_F^2,\ \mathrm{RI}_k=1-e^{-\rho_k/r_0}$ | `sensitivity.SensitivityResult.rho`, `cri.compute_RI` |
-| (20)-(21) | Coupling | $c_k$ (column-normalized off-diagonal ratio), $\mathrm{CI}_k=1-c_k$ | `sensitivity.coupling_raw`, `cri.compute_CI` |
-| (22)-(23) | Safety margin | $\psi_{\ell,k}=\dfrac{-g_\ell(q_k)}{m_\ell^{\mathrm{safe}}+\varepsilon_0}$, $\mathrm{SMI}_k=\min_\ell\mathrm{sat}_{[0,1]}(\psi_{\ell,k})$ | `cri.microgrid_margins`, `cri.compute_SMI` |
-| (26) | Adaptability | $\mathrm{AI}_k=\exp(-a_k/a_0)$ | `cri.compute_AI` |
-| (27) | Noise confidence | $\mathrm{NCI}_k=\exp(-\hat\sigma_{y,k}^2/\sigma_{y,0}^2)\exp(-\varepsilon_{s,k}^2/\varepsilon_{0,s}^2)$ | `cri.compute_NCI` |
-| (30) | CRI combination | $\widehat{\mathrm{CRI}}_k=\omega^T\Gamma_k$ | `cri.compute_instantaneous_cri` |
-| (31)-(32) | Dynamic filter | $\mathrm{CRI}_k=(1-\beta_k)\mathrm{CRI}_{k-1}+\beta_k\widehat{\mathrm{CRI}}_k$ | `cri.update_dynamic_cri`, `cri.compute_beta` |
-| (33) | Classification | Activate / Monitor / Delay / Reject via $\eta_A,\eta_M,\eta_D$ | `cri.classify_readiness` |
-| (35)-(36) | Activation & adaptation scaling | $s_k$, $\kappa_k=\mathrm{sat}_{[\kappa_{\min},1]}\!\left(\frac{\mathrm{CRI}_k-\eta_D}{\eta_A-\eta_D}\right)$ | `cri.compute_activation`, `cri.compute_kappa` |
-| (37)-(38) | Scaled updates | shadow parameter update, blended plant command | `controllers.blend_command` |
-| (39) | Digital-twin escalation | $d_k^{\mathrm{DT}}$ | `cri.compute_dt_flag` |
-| (47) | Computational complexity | $\mathcal{C}_{\mathrm{CRI}}=\mathcal{O}(n_yn_uN+n_u^2N+n_u^3)$ | `sensitivity.estimate_sensitivity` (dominant cost), benchmarked in `timing.py` |
+| (14) | Normalized increments | $\Delta\widetilde u_k=D_u^{-1}\Delta u_k,\ \Delta\widetilde y_k=D_y^{-1}\Delta y_k$ | `config.DEFAULT_D_u`, `DEFAULT_D_y` |
+| (17) | Safe-probing amplitude | $\bar\delta_k=\bar\delta_{\max}\,\mathrm{SMI}_k$ | `probing.scale_probe_with_smi` |
+| (19) | Weighted regularized sensitivity | $\hat S_k=\Delta\widetilde Y_kW_k\Delta\widetilde U_k^T\left(\Delta\widetilde U_kW_k\Delta\widetilde U_k^T+\lambda_sI\right)^{-1}$ | `sensitivity.estimate_sensitivity` |
+| (22)-(23) | Responsiveness | $\rho_k=\tfrac{1}{n_u}\lVert\hat S_k\rVert_F^2,\ \mathrm{RI}_k=1-e^{-\rho_k/r_0}$ | `sensitivity.SensitivityResult.rho`, `cri.compute_RI` |
+| (24)-(25) | Coupling | $c_k$ (column-normalized off-diagonal ratio), $\mathrm{CI}_k=1-c_k$ | `sensitivity.coupling_raw`, `cri.compute_CI` |
+| (26)-(27) | Safety margin | $\psi_{\ell,k}=\dfrac{-g_\ell(q_k)}{m_\ell^{\mathrm{safe}}+\varepsilon_0}$, $\mathrm{SMI}_k=\min_\ell\mathrm{sat}_{[0,1]}(\psi_{\ell,k})$ | `cri.microgrid_margins`, `cri.compute_SMI` |
+| (30) | Adaptability | $\mathrm{AI}_k=\exp(-a_k/a_0)$ | `cri.compute_AI` |
+| (31) | Noise confidence | $\mathrm{NCI}_k=\exp(-\hat\sigma_{y,k}^2/\sigma_{y,0}^2)\exp(-\varepsilon_{s,k}^2/\varepsilon_{0,s}^2)$ | `cri.compute_NCI` |
+| (34) | CRI combination | $\widehat{\mathrm{CRI}}_k=\omega^T\Gamma_k$ | `cri.compute_instantaneous_cri` |
+| (35)-(36) | Dynamic filter | $\mathrm{CRI}_k=(1-\beta_k)\mathrm{CRI}_{k-1}+\beta_k\widehat{\mathrm{CRI}}_k$ | `cri.update_dynamic_cri`, `cri.compute_beta` |
+| (37) | Classification | Activate / Monitor / Delay / Reject via $\eta_A,\eta_M,\eta_D$ | `cri.classify_readiness` |
+| (38)-(39) | Activation & adaptation scaling | $s_k$, $\kappa_k=\mathrm{sat}_{[\kappa_{\min},1]}\!\left(\frac{\mathrm{CRI}_k-\eta_D}{\eta_A-\eta_D}\right)$ | `cri.compute_activation`, `cri.compute_kappa` |
+| (40)-(41) | Scaled updates | shadow parameter update, blended plant command | `controllers.blend_command` |
+| (42) | Digital-twin escalation | $d_k^{\mathrm{DT}}$ | `cri.compute_dt_flag` |
+| (61) | Computational complexity | $\mathcal{C}_{\mathrm{CRI}}=\mathcal{O}(n_yn_uN+n_u^2N+n_u^3)$ | `sensitivity.estimate_sensitivity` (dominant cost), benchmarked in `timing.py` |
 
 ## Architecture
 
@@ -122,7 +124,7 @@ topology, true actuator effectiveness, true noise level) is available, and it is
 ```
 measurement-driven readiness loop (per sample k)
   plant.py            -->  y_k  (measured), hidden_truth (validation-only)
-  probing.py           -->  safe micro-probe, amplitude scaled by SMI_{k-1}   (Eq. 13)
+  probing.py           -->  safe micro-probe, amplitude scaled by SMI_{k-1}   (Eq. 17)
   sensitivity.py        -->  S_hat_k  (regularized local sensitivity, from (u,y) windows only)
   cri.py                -->  RI, CI, SMI, AI, NCI  ->  CRI_k  ->  class, s_k, kappa_k, DT flag
   controllers.py        -->  u_safe (fallback droop), u_candidate (OFO), blended command
@@ -130,7 +132,7 @@ measurement-driven readiness loop (per sample k)
 
 ![CRI readiness dashboard, nominal case](README_Figures/fig3_cri_dashboard_nominal.png)
 
-*The signature figure (Fig. 3 of the paper): operating stress, the five readiness indicators, the
+*The signature figure (Fig. 4 of the paper): operating stress, the five readiness indicators, the
 combined CRI with its Activate/Monitor/Delay/Reject decision regions, and the resulting activation
 signal -- all for the nominal case (S1).*
 
@@ -138,15 +140,15 @@ signal -- all for the nominal case (S1).*
 
 The framework is demonstrated on a converter-dominated hybrid AC/DC microgrid: two coordinated
 VSCs on a shared DC link, each feeding an AC bus, with a CRI-supervised OFO setpoint coordinator
-as the candidate controller and a conventional droop/PI controller as the always-trusted fallback.
+as the candidate controller and a conventional droop/PI controller as the fallback.
 
 ![Microgrid case-study topology](README_Figures/fig2_microgrid_topology.png)
 
-*Fig. 2 of the paper: the two-VSC hybrid AC/DC microgrid topology used throughout every scenario.*
+*Fig. 3 of the paper: the two-VSC hybrid AC/DC microgrid topology used throughout every scenario.*
 
 ## Key Results
 
-All numbers below are quoted directly from the current manuscript (Sec. VI, Results and
+All numbers below are quoted directly from the current manuscript (Section 7, Results and
 Discussion) and are reproducible from `results/*.csv` via the corresponding notebook.
 
 | Scenario | Headline finding |
@@ -171,7 +173,7 @@ Discussion) and are reproducible from `results/*.csv` via the corresponding note
 <img src="README_Figures/fig9_severe_dashboard.png" width="56%" alt="Combined severe-case dashboard">
 </p>
 
-**Table III of the manuscript** -- Comparison of Controller-Activation Strategies (S8, combined severe case):
+**Table 4 of the manuscript** -- Comparison of Controller-Activation Strategies (S8, combined severe case):
 
 | Method | $E_V$ | $E_I$ | $N_{FA}$ | $T_{on}$ [s] |
 |---|---|---|---|---|
@@ -249,13 +251,10 @@ fold. Generalization is not uniform, however: it is strong for six of the eight 
 (S1, S3, S4, S6, S7, and S2 to a lesser degree) and degrades specifically for the two most severe,
 least-represented ones (S5, S8) -- see below.
 
-*(Note on aggregation: each held-out scenario must contribute equally to this table, but S6 and S8
-were evaluated over 5 seeds each (measurement noise) against 1 seed for the other six scenarios --
-averaging the raw per-seed rows directly would therefore silently overweight S6/S8 by 5x. The
-aggregation is done in two stages instead -- average seeds within each scenario first, then average
-the resulting 8 scenario-level values with equal weight -- which is also what Table
-`tab:risk_sensitivity`/`tab:horizon_sensitivity` below already do, so all three tables are now on the
-same convention and directly comparable at $\epsilon_{\mathrm{risk}}=0.01$, $T_H=0.5$ s.)*
+*(Note on aggregation: S6 and S8 were evaluated over 5 seeds each (measurement noise) against 1 seed
+for the other six scenarios, so each scenario's seeds are averaged first and the resulting 8
+scenario-level values are then averaged with equal weight -- otherwise S6/S8 would be overweighted
+5x relative to the rest. Table 7 and Table 8 below use the same convention.)*
 
 **The honest finding, not hidden.** DC-CRI's calibration pool is dominated (>97% of pooled hazard
 samples in any 7-scenario fold) by scenarios S7/S8's collapse-type hazard signature. This is not a
@@ -288,8 +287,7 @@ FAR from $0.65$ to $0.22$, and reduces availability from $1.00$ to $0.81$ -- loo
 the opposite pattern, exactly as intended. The relationship is not gently graded: there is a sharp
 transition in $\eta_A^\star$ between $\epsilon_{\mathrm{risk}}=0.01$ and $0.025$, reflecting the
 calibration pool's hazard-sample composition described above. (The $\epsilon_{\mathrm{risk}}=0.01$
-row matches the corrected headline table above exactly, since notebook 14's evaluation now uses the
-same seed-averaging convention as notebook 13 -- see the aggregation-fix note further down.)
+row matches the headline table above exactly, since both use the same seed-averaging convention.)
 
 **Verification-horizon sensitivity** (LOSO-aggregate, mean over 8 folds, $\epsilon_{\mathrm{risk}}=0.01$;
 source: `results/results_dc_cri_horizon_sensitivity.csv`):
@@ -303,22 +301,13 @@ source: `results/results_dc_cri_horizon_sensitivity.csv`):
 
 Longer horizons produce a more conservative threshold and lower FAR, at the cost of availability and
 a rising FDR. $T_H=0.5$ s was retained as the principal setting as the point closest to the middle
-of this trade-off. The $T_H=0.5$ s row matches the corrected headline table exactly (both are the
-same $\epsilon_{\mathrm{risk}}=0.01$, $T_H=0.5$ s point) -- see the aggregation-fix note below.
-
-*(Aggregation fix, 2nd pass: notebook 14's `run_full_loso` originally evaluated every held-out
-scenario -- including S6/S8 -- on a single seed, so its risk/horizon sweeps disagreed with the
-headline table above at the shared principal point ($N_{FA}$: 376.8 vs. 374.3; FDR: 0.052 vs. 0.054)
-even though both were nominally "equal-scenario-weighted." Fixed by giving `run_full_loso` the same
-`NOISY_SCENARIOS`/5-seed averaging as notebook 13 before computing the 8-fold mean; re-running moved
-several non-principal rows too (e.g. $T_H=0.1$ s FAR: $0.369\to0.269$; $\epsilon_{\mathrm{risk}}=0.025$
-FAR: $0.508\to0.408$), reflecting real seed-to-seed variability in S8's stochastic realization at
-looser thresholds, not a further bug -- the principal point now matches the headline table exactly.)*
+of this trade-off. The $T_H=0.5$ s row matches the headline table exactly, since both describe the
+same $\epsilon_{\mathrm{risk}}=0.01$, $T_H=0.5$ s point.
 
 **Calibration feasibility and runtime** (all 8 folds, $\epsilon_{\mathrm{risk}}=0.01$; source:
 `results/results_dc_cri_calibration_diagnostics.csv`): every fold is calibration-feasible (**8/8**),
-the risk constraint is active in all eight, the achieved calibration-set FAR sits within 3% relative
-of the $0.01$ target in every fold ($0.0097$-$0.0100$), and weight calibration itself is essentially
+the risk constraint is active in all eight, the achieved calibration-set $\widehat{\mathcal{R}}_{\mathrm{act}}$
+sits within 3% relative of the $0.01$ target in every fold ($0.0097$-$0.0100$), and weight calibration itself is essentially
 free as a deployment cost, completing in $2.2$-$2.9$ ms per fold ($9$-$11$ SLSQP iterations) as a
 one-time offline commissioning step -- it does not affect the online per-sample CRI update time
 (Sec. 11 below), which is identical for EC-CRI and DC-CRI.
@@ -328,9 +317,10 @@ one-time offline commissioning step -- it does not affect the online per-sample 
 *The clearest single illustration of the generalization gap: on S8 held out from calibration,
 EC-CRI's fixed threshold correctly rejects activation almost throughout (mean $s_k=0.008$), while
 DC-CRI's calibrated threshold -- never having seen S8 -- remains active almost throughout (mean
-$s_k=1.000$). Included deliberately as the one honestly negative result in this study: the
-framework's fallback-safety guarantee means a wrong readiness estimate here still leaves the plant
-protected by the always-trusted fallback controller, not unprotected.*
+$s_k=1.000$). Included deliberately as the one honestly negative result in this study: a wrong
+readiness estimate transfers authority to the candidate controller; any residual protection then
+depends on the fallback, which is itself not guaranteed to preserve the admissible set in this
+scenario.*
 
 | # | Notebook | Purpose | Key outputs |
 |---|---|---|---|
@@ -389,11 +379,12 @@ Requires Python 3.10+.
 ```bash
 git clone <this-repository-url>
 cd TCST_CRI
-pip install numpy scipy matplotlib pandas jupyter
+pip install -r requirements.txt
 ```
 
 No GPU, no external solver, no PyDAE/EMT toolchain, and no proprietary software are required --
-everything runs on plain NumPy/pandas in a discrete-time, fixed-step simulation loop.
+everything runs on plain NumPy/pandas in a discrete-time, fixed-step simulation loop. Results in
+this repository were produced with Python 3.10.9 and NumPy 2.2.6, as stated in the manuscript.
 
 ## Quick Start
 
@@ -440,7 +431,7 @@ fair, paired comparison throughout.
 
 ## CRI Design Parameters
 
-The manuscript's own parameter-role table (Table II):
+The manuscript's own parameter-role table (Table 3):
 
 | Parameter | Role | Typical Effect of Increasing It | Practical Interpretation |
 |---|---|---|---|
@@ -495,7 +486,7 @@ nothing else in `cri_microgrid` needs to change.
 | Protocol | Required methods | Used for |
 |---|---|---|
 | `CandidateControllerProtocol` | `candidate_command()`, `propose_nominal_step(y_meas)`, `shadow_update(delta_nominal, kappa_k)`, `reset(u0=None)` | Your optimizer, RL policy, PSO/HHO tuner, or neural adaptive controller |
-| `FallbackControllerProtocol` | `command(y_meas)` | The conservative, always-trusted controller used whenever $s_k=0$ |
+| `FallbackControllerProtocol` | `command(y_meas)` | The conservative fallback controller used whenever $s_k=0$ |
 | `PlantProtocol` | `measure(exo, noise_cfg=None)`, `step(u, t, exo, actuator_gain, topo, noise_cfg=None)` | Your simulated (or, for HIL, your interfaced real-time) system |
 
 `interfaces.check_interfaces(candidate=..., fallback=..., plant=...)` validates any subset before a
@@ -519,7 +510,7 @@ rewriting the readiness layer at any stage:
 **Real-time readiness, by construction.** Every equation in the framework is a small,
 self-contained, constant-time operation -- no history replay, no iterative solver, no dynamically
 sized state. The dominant cost is the regularized sensitivity estimate, with complexity
-$\mathcal{O}(n_yn_uN+n_u^2N+n_u^3)$ (Eq. 47); every other indicator and decision step is vector
+$\mathcal{O}(n_yn_uN+n_u^2N+n_u^3)$ (Eq. 61); every other indicator and decision step is vector
 arithmetic and threshold comparisons. Measured directly with real closed-loop data at the exact
 case-study dimensions (`notebooks/11_Implementation_Time.ipynb`), one full `CRISupervisor.step()`
 costs a mean of $0.23$~ms (maximum $0.86$~ms across all eight scenarios) against a $20$~ms
@@ -562,12 +553,12 @@ Two calibration properties carry over to any new deployment, documented directly
 
 ## Supplementary Material
 
-Beyond the manuscript's nine main-text figures, the notebooks in this repository produce a
+Beyond the manuscript's ten main-text figures, the notebooks in this repository produce a
 complete set of supplementary results:
 
 | Material | Notebook | Description |
 |---|---|---|
-| Safe-probing scaling-law verification | 02 | Direct scatter-plot verification of $\bar\delta_k=\bar\delta_{\max}\mathrm{SMI}_k$ (Eq. 13) against the $y=x$ bound |
+| Safe-probing scaling-law verification | 02 | Direct scatter-plot verification of $\bar\delta_k=\bar\delta_{\max}\mathrm{SMI}_k$ (Eq. 17) against the $y=x$ bound |
 | All-scenario strategy comparison | 08 | Direct / Threshold / CRI compared across all eight scenarios in one figure |
 | Scenario fingerprint | 08 | A heatmap summarizing every scenario's indicator profile side by side |
 | Parameter-sensitivity heatmaps | 09 | $N\times\eta_A$ and $\lambda_s\times\bar\delta_{\max}$ design-tradeoff sweeps, plus a $\pm20\%$ threshold/weight robustness check |
@@ -594,8 +585,11 @@ This repository is released under the [MIT License](LICENSE.txt).
 
 ## Acknowledgments
 
-This work was supported by the European Union under the Horizon Europe project COCOON
-(COoperative Cyber prOtectiON for modern power grids) under Grant 101120221.
+This work was supported by the Ministerio de Ciencia e Innovación (MCIN), Agencia Estatal de
+Investigación (AEI), 10.13039/501100011033, through the European Regional Development Fund (ERDF),
+"A way of making Europe," under Grant PID2021-124571OB-I00; by CDTI under Project Ad-Grhid
+MIG-20221009, 127835OB-I00; and by the European Commission through the projects COCOON (COoperative
+Cyber prOtectiON for modern power grids) under Grant 101120221 and SUNRISE under Grant 101079200.
 
 ## Contact
 
