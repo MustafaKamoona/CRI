@@ -92,7 +92,7 @@ comparison in every scenario.
 
 Every equation is implemented as its own small, pure function in `cri_microgrid`, independently
 testable and directly traceable to the manuscript (equation numbers below match the current
-version of `CRI_Main_Paper_V2.tex`):
+version of the manuscript):
 
 | Eq. | Name | Formula | Implementation |
 |---|---|---|---|
@@ -338,9 +338,10 @@ Every number above is reproducible directly from `results/*.csv` via
 ## Repository Structure
 
 ```
-TCST_CRI/                          # Repository root
+CRI/                                # Repository root
 ├── README.md
 ├── LICENSE.txt
+├── requirements.txt
 ├── cri_microgrid/                 # Core simulation, controller, and CRI package
 │   ├── config.py                  #   PlantParams, ControllerParams, ConstraintParams, ProbeParams,
 │   │                              #   ProfileParams, NoiseParams, ScenarioParams, CRIParams, SimulationParams
@@ -369,16 +370,16 @@ TCST_CRI/                          # Repository root
 └── results/                       # CSV exports of every study's numerical results
 ```
 
-The manuscript source (`CRI_Main_Paper_V2.tex`) and its LaTeX-integration staging notes are
-maintained separately and are not part of this code repository.
+The manuscript source and its LaTeX-integration staging notes are maintained separately and are not
+part of this code repository.
 
 ## Installation
 
 Requires Python 3.10+.
 
 ```bash
-git clone <this-repository-url>
-cd TCST_CRI
+git clone https://github.com/MustafaKamoona/CRI.git
+cd CRI
 pip install -r requirements.txt
 ```
 
